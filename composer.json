@@ -1,0 +1,48 @@
+{
+    "name": "mineschan/loco-laravel-export",
+    "description": "Export strings and translations from https://localise.biz for Laravel 5 projects",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "MineS Chan",
+            "email": "mineschan@gmail.com",
+            "homepage": "https://mineschan.com"
+        }
+    ],
+    "homepage": "https://github.com/mineschan/locolaravelexport",
+    "keywords": ["Laravel", "LocoLaravelExport", "i18n", "localise", "loco", "translation", "language"],
+    "require": {
+        "illuminate/support": "~5",
+        "loco/loco": "^2.0",
+        "chumper/zipper": "1.0.x"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~7.0",
+        "mockery/mockery": "^1.1",
+        "orchestra/testbench": "~3.0",
+        "sempro/phpunit-pretty-print": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "mineschan\\LocoLaravelExport\\": "src/"
+        },
+        "files": [
+            "helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "mineschan\\LocoLaravelExport\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "mineschan\\LocoLaravelExport\\LocoLaravelExportServiceProvider"
+            ],
+            "aliases": {
+                "LocoLaravelExport": "mineschan\\LocoLaravelExport\\Facades\\LocoLaravelExport"
+            }
+        }
+    }
+}
