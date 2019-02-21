@@ -50,7 +50,7 @@ return [
         'directory' => 'loco_export',
 
         /* Whether or not you want to keep or clean the downloaded files from Loco */
-        'cleanup' => true,
+        'cleanup' => false,
     ],
 
     /*

@@ -132,8 +132,18 @@ class LocoLaravelExport
             $console->error('[LocoLaravelExport] ' . $e->getMessage());
         }
 
-        $static->cleanUp();
+        if (config('loco-laravel-export.download.cleanup')) {
+            if (LocoLaravelExport::clean()) {
+                $static->consoleInstance->comment('Downloaded folder cleaned.');
+            }
+        }
+    }
 
+    public static function clean()
+    {
+        $static = new static;
+        $folder = config('loco-laravel-export.download.directory');
+        return $deleted = $static->getDownloadStorage()->deleteDirectory($folder);
     }
 
     private function isSaveNecessary($locale)
@@ -154,16 +164,6 @@ class LocoLaravelExport
 
         $saved = $this->getSaveStorage()->put($locale . '/' . $filename, $content);
         if ($saved) $this->consoleInstance->line(sprintf('Language <comment>%s</comment> saved to <info>%s%s/%s</info>', $locale, $this->getSavePath(), $locale, $filename));
-    }
-
-    private function cleanUp()
-    {
-        if (config('loco-laravel-export.download.cleanup')) {
-            $folder = config('loco-laravel-export.download.directory');
-            $deleted = $this->getDownloadStorage()->deleteDirectory($folder);
-
-            if ($deleted) $this->consoleInstance->comment('Downloaded folder cleaned');
-        }
     }
 
 }

@@ -12,7 +12,8 @@ class LocoLaravelExportServiceProvider extends ServiceProvider
      * @var array
      */
     protected $commands = [
-        'mineschan\LocoLaravelExport\Commands\Export'
+        'mineschan\LocoLaravelExport\Commands\Export',
+        'mineschan\LocoLaravelExport\Commands\CleanUp'
     ];
 
     /**
