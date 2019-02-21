@@ -22,19 +22,19 @@ $ php artisan vendor:publish --provider="mineschan\LocoLaravelExport\LocoLaravel
 
 ## Usage: Export
 
-####Step 1
+#### Step 1
 
 Add your Export Key as `LOCO_EXPORT_API_KEY` in `.env`
 
 
-####Step 2
+#### Step 2
 Save all available languages to resources/lang directory.
 
 ``` bash
 $ php artisan localise:export
 ```
 
-####Done!
+#### Done!
 
 ---
 
@@ -49,7 +49,7 @@ You can pass them one by one, or you can simply pass `zh` for all `zh` locale. e
 
 
 
-#####Export in Live servers
+##### Export in Live servers
 Just like `artisan:migrate`. If you run `localise:export` on non-local environment, confirmation will be needed.
 
 You can pass `-f` or `--force` to make it silent. Helpful if you want to include this to your CI/CD flow.  
