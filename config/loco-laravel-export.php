@@ -7,7 +7,7 @@ return [
     | Localise.biz Api Key
     |--------------------------------------------------------------------------
     |
-    | Retrieve Api Key in Your project -> Developer Tools -> Export API -> Export key
+    | Retrieve Api Key in your Loco project -> Developer Tools -> Export API -> Export key
     | Api key is bind to specific loco project.
     */
     'api_key' => env('LOCO_EXPORT_API_KEY'),
@@ -34,32 +34,36 @@ return [
     */
     'locales' => [],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Export Disk
-    |--------------------------------------------------------------------------
-    |
-    | Unzipped archive will be saved to this disk.
-    */
-    'export_disk' => env('LOCO_EXPORT_DISK', 'local'),
-
 
     /*
     |--------------------------------------------------------------------------
-    | Export Folder
+    | Download Options
     |--------------------------------------------------------------------------
     |
-    | Default folder that save under desired disk.
+    | Unzipped contents will be saved to this disk and directory before copying
+    | to laravel language directories.
     */
-    'export_folder' => 'loco_export',
+    'download' => [
 
+        'disk' => env('LOCO_EXPORT_DOWNLOAD_DISK', 'local'),
+
+        'directory' => 'loco_export',
+
+        /* Whether or not you want to keep or clean the downloaded files from Loco */
+        'cleanup' => true,
+    ],
 
     /*
     |--------------------------------------------------------------------------
-    | Clean up downloaded files after export
+    | Save Options (Modify with caution)
     |--------------------------------------------------------------------------
     |
-    | Whether or not you want to keep or clean the downloaded files from Loco
+    | Laravel default resources language locations
+    | This is not practical to have another location unless
+    | Laravel updates change it o
+    |
     */
-    'clean_up' => env('LOCO_EXPORT_CLEAN_UP', true),
+    'export' => [
+        'destination' => resource_path('lang')
+    ],
 ];

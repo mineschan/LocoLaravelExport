@@ -31,7 +31,7 @@ class Export extends Command
      */
     public function handle()
     {
-        $exportLanguages = $this->argument('lang');
+        $exportLanguages = count($this->argument('lang')) ? $this->argument('lang') : config('loco-laravel-export.locales');
         $force = $this->option('force');
 
         if (app()->environment() != 'local' && !$force) {

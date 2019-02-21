@@ -7,18 +7,60 @@ use Chumper\Zipper\Facades\Zipper;
 use GuzzleHttp\Command\Exception\CommandClientException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Loco\Http\ApiClient;
 
 class LocoLaravelExport
 {
-//    public function __construct()
-//    {
-//        dd('test');
-//    }
+    protected $exportLocales = [];
 
-    public static function exportArchive(array $languages = null, Command $console = null)
+    protected $consoleInstance = [];
+
+    private $saveStorage;
+    private $downloadStorage;
+
+    private function setExportLocales($locales)
+    {
+        $this->exportLocales = collect($locales)->map(function ($locale) {
+            return str_replace('_', '-', trim($locale));
+        });
+    }
+
+    private function getDownloadStorage()
+    {
+        if ($this->downloadStorage) return $this->downloadStorage;
+
+        $disk = config('loco-laravel-export.download.disk');
+        $driver = config("filesystems.disks.{$disk}.driver");
+
+        if ($driver != 'local') {
+            throw new \Exception('Sorry! Only export to disk with driver = local is allowed. Your configured disk: ' . $disk);
+        }
+
+        $this->downloadStorage = Storage::disk($disk);
+
+        return $this->downloadStorage;
+    }
+
+    private function getSaveStorage()
+    {
+        if ($this->saveStorage) return $this->saveStorage;
+
+        $savePath = config('loco-laravel-export.export.destination');
+        $this->saveStorage = Storage::createLocalDriver(['root' => $savePath]);
+        return $this->saveStorage;
+    }
+
+    private function getSavePath()
+    {
+        return $this->getSaveStorage()->getAdapter()->getPathPrefix();
+    }
+
+    public static function exportArchive(array $locales = null, Command $console = null)
     {
         $static = new static();
+        $static->setExportLocales($locales);
+        $static->consoleInstance = $console;
 
         try {
             //check Api Key
@@ -46,25 +88,16 @@ class LocoLaravelExport
                 throw new \Exception('Archive download failed.');
             }
 
-            $disk = config('loco-laravel-export.export_disk');
-            $driver = config("filesystems.disks.{$disk}.driver");
-
-            if ($driver != 'local') {
-                throw new \Exception('Sorry! Only export to disk with driver = local is allowed. Your configured disk: ' . $disk);
-            }
-
-            $folder = config('loco-laravel-export.export_folder');
-
-            $storage = Storage::disk($disk);
-            $diskPath = $storage->getAdapter()->getPathPrefix() . '/' . $folder;
+            $folder = config('loco-laravel-export.download.directory');
+            $diskPath = $static->getDownloadStorage()->getAdapter()->getPathPrefix() . $folder;
 
             if ($zipper = Zipper::make($file)) {
                 $console->comment('Archive downloaded, unzipping...');
                 $zipper->extractTo($diskPath);
             }
 
-            $projectFolder = $storage->directories($folder);
-            $translationFiles = $storage->files($projectFolder[0] . '/Resources/translations');
+            $projectFolder = $static->getDownloadStorage()->directories($folder);
+            $translationFiles = $static->getDownloadStorage()->files($projectFolder[0] . '/Resources/translations');
 
             if (!$translationFiles) {
 
@@ -73,29 +106,17 @@ class LocoLaravelExport
 
             } else {
 
-                $rootPath = getcwd() . '/resources/lang';
-                $resourceDisk = Storage::createLocalDriver(['root' => $rootPath]);
-
                 collect($translationFiles)
-                    ->flatMap(function ($row) {
-                        $translationFile = basename($row);
-                        $fileComponents = explode('.', $translationFile);
-                        $language = collect($fileComponents)->get(count($fileComponents) - 2);
-                        return [str_replace('_', '-', $language) => $row];
+                    ->flatMap(function ($file) {
+                        $fileComponents = explode('.', basename($file));
+                        $fileLocaleCode = collect($fileComponents)->get(count($fileComponents) - 2);
+                        return [$fileLocaleCode => $file];
                     })
-                    ->each(function ($filePath, $lang) use ($console, $storage, $resourceDisk, $languages) {
-
-                        if (!$languages || in_array($lang, $languages)) {
-
-                            $filename = config('loco-laravel-export.lang_filename') . '.php';
-
-                            $content = $storage->get($filePath);
-
-                            $resourceDisk->put($lang . '/' . $filename, $content);
-
-                            $console->line(sprintf('Language <comment>%s</comment> saved to <info>resources/%s/%s</info>', $lang, $lang, $filename));
+                    ->each(function ($filePath, $locale) use ($static) {
+                        //save downloaded language file to laravel system
+                        if ($static->isSaveNecessary($locale)) {
+                            $static->saveContent($filePath, $locale);
                         }
-
                     });
             }
 
@@ -104,13 +125,45 @@ class LocoLaravelExport
             if ($e->getCode() == 401) {
                 $console->error('[LocoLaravelExport] Request results in 401, check your Loco Api Key.');
             } else {
-                $console->error('[LocoLaravelExport] Export error.');
+                $console->error('[LocoLaravelExport] Download error. Response code: ' . $e->getCode());
             }
 
         } catch (\Exception $e) {
             $console->error('[LocoLaravelExport] ' . $e->getMessage());
         }
 
+        $static->cleanUp();
+
+    }
+
+    private function isSaveNecessary($locale)
+    {
+        if (!count($this->exportLocales)) return true;
+
+        foreach ($this->exportLocales as $exportLocale) {
+            if (Str::contains($locale, $exportLocale)) return true;
+        }
+    }
+
+    private function saveContent($filePath, $locale)
+    {
+        $filename = config('loco-laravel-export.lang_filename') . '.php';
+        $content = $this->getDownloadStorage()->get($filePath);
+
+        $locale = str_replace('_', '-', $locale);
+
+        $saved = $this->getSaveStorage()->put($locale . '/' . $filename, $content);
+        if ($saved) $this->consoleInstance->line(sprintf('Language <comment>%s</comment> saved to <info>%s%s/%s</info>', $locale, $this->getSavePath(), $locale, $filename));
+    }
+
+    private function cleanUp()
+    {
+        if (config('loco-laravel-export.download.cleanup')) {
+            $folder = config('loco-laravel-export.download.directory');
+            $deleted = $this->getDownloadStorage()->deleteDirectory($folder);
+
+            if ($deleted) $this->consoleInstance->comment('Downloaded folder cleaned');
+        }
     }
 
 }
