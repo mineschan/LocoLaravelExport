@@ -1,8 +1,14 @@
 # Changelog
 
-All notable changes to `LocoLaravelExport` will be documented in this file.
+## Version 0.2
 
-## Version 1.0
+### Added
+- Code logic refine. Support clean up after saving, update config template.
+- Add Manual Clean Command
+- Readme Update
+
+
+## Version 0.1
 
 ### Added
 - Everything
